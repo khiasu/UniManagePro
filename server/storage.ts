@@ -51,6 +51,7 @@ export interface IStorage {
     ongoing: number;
     myBookings: number;
   }>;
+  isBookingTimeValid(resourceId: string, startTime: Date, endTime: Date): Promise<{ valid: boolean; message?: string }>;
 }
 
 export class MemStorage implements IStorage {
@@ -161,10 +162,26 @@ export class MemStorage implements IStorage {
 
     resourcesData.forEach(resource => {
       const id = randomUUID();
+      
+      // Set working hours based on resource type
+      let workingHoursStart = "09:00";
+      let workingHoursEnd = "15:00";
+      let hasWorkingHours = true;
+      
+      // Courts and grounds don't have working hour restrictions
+      if (resource.type === "sports_court" || resource.type === "sports_ground") {
+        hasWorkingHours = false;
+        workingHoursStart = "00:00";
+        workingHoursEnd = "23:59";
+      }
+      
       this.resources.set(id, { 
         ...resource, 
         id, 
         isActive: true,
+        workingHoursStart,
+        workingHoursEnd,
+        hasWorkingHours,
         createdAt: new Date()
       });
     });
@@ -260,6 +277,9 @@ export class MemStorage implements IStorage {
       equipment: insertResource.equipment || null,
       requiresApproval: insertResource.requiresApproval || false,
       isActive: true,
+      workingHoursStart: insertResource.workingHoursStart || "09:00",
+      workingHoursEnd: insertResource.workingHoursEnd || "15:00",
+      hasWorkingHours: insertResource.hasWorkingHours ?? true,
       createdAt: new Date()
     };
     this.resources.set(id, resource);
@@ -396,6 +416,28 @@ export class MemStorage implements IStorage {
     ).length;
 
     return { available, booked, ongoing, myBookings };
+  }
+
+  async isBookingTimeValid(resourceId: string, startTime: Date, endTime: Date): Promise<{ valid: boolean; message?: string }> {
+    const resource = await this.getResource(resourceId);
+    if (!resource) {
+      return { valid: false, message: 'Resource not found' };
+    }
+
+    if (resource.hasWorkingHours) {
+      const workingHoursStart = new Date('1970-01-01T' + resource.workingHoursStart + 'Z');
+      const workingHoursEnd = new Date('1970-01-01T' + resource.workingHoursEnd + 'Z');
+      if (startTime < workingHoursStart || endTime > workingHoursEnd) {
+        return { valid: false, message: 'Booking time is outside of working hours' };
+      }
+    }
+
+    const conflictingBookings = await this.getConflictingBookings(resourceId, startTime, endTime);
+    if (conflictingBookings.length > 0) {
+      return { valid: false, message: 'Booking time conflicts with existing bookings' };
+    }
+
+    return { valid: true };
   }
 }
 

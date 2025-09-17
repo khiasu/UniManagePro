@@ -28,7 +28,7 @@ export const departments = pgTable("departments", {
 export const resources = pgTable("resources", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
-  type: text("type").notNull(), // 'computer_lab', 'chemistry_lab', 'auditorium', etc.
+  type: text("type").notNull(), // 'computer_lab', 'chemistry_lab', 'auditorium', 'engineering_lab', 'art_studio', 'music_room', 'commerce_lab', 'sports_court', 'sports_ground', etc.
   departmentId: varchar("department_id").references(() => departments.id).notNull(),
   capacity: integer("capacity").notNull(),
   equipment: text("equipment").array(), // JSON array of equipment
@@ -36,6 +36,9 @@ export const resources = pgTable("resources", {
   location: text("location").notNull(),
   isActive: boolean("is_active").default(true),
   requiresApproval: boolean("requires_approval").default(false),
+  workingHoursStart: text("working_hours_start").default("09:00"), // Start time (24-hour format)
+  workingHoursEnd: text("working_hours_end").default("15:00"), // End time (24-hour format)
+  hasWorkingHours: boolean("has_working_hours").default(true), // False for courts/grounds that are always available
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -82,6 +85,9 @@ export const insertResourceSchema = createInsertSchema(resources).pick({
   description: true,
   location: true,
   requiresApproval: true,
+  workingHoursStart: true,
+  workingHoursEnd: true,
+  hasWorkingHours: true,
 });
 
 export const insertBookingSchema = createInsertSchema(bookings).pick({

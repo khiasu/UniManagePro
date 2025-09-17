@@ -143,6 +143,24 @@ export function BookingModal({ isOpen, onClose, resource }: BookingModalProps) {
                 </span>
               </div>
             </div>
+            
+            {/* Working Hours Info */}
+            {resource.hasWorkingHours && (
+              <div className="mt-3 pt-3 border-t border-border/50">
+                <p className="text-muted-foreground flex items-center gap-1 text-sm">
+                  <Clock className="w-3 h-3" />
+                  Working Hours: {resource.workingHoursStart} - {resource.workingHoursEnd}
+                </p>
+              </div>
+            )}
+            {!resource.hasWorkingHours && (
+              <div className="mt-3 pt-3 border-t border-border/50">
+                <p className="text-muted-foreground flex items-center gap-1 text-sm">
+                  <Clock className="w-3 h-3" />
+                  Available 24/7
+                </p>
+              </div>
+            )}
           </motion.div>
 
           {/* Booking Form */}

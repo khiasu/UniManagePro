@@ -1,12 +1,15 @@
-import type { User, Department, Resource, Booking, ResourceStatus } from "@shared/schema";
+import type { User, Department, Booking, ResourceStatus } from "@shared/schema";
 
-export interface ResourceWithStatus extends Resource {
+export interface ResourceWithStatus extends Omit<import("@shared/schema").Resource, 'workingHoursStart' | 'workingHoursEnd' | 'hasWorkingHours'> {
   department?: Department;
   status: ResourceStatus;
+  workingHoursStart?: string;
+  workingHoursEnd?: string;
+  hasWorkingHours?: boolean;
 }
 
 export interface BookingWithResource extends Booking {
-  resource?: Resource;
+  resource?: import("@shared/schema").Resource;
 }
 
 export interface DashboardStats {

@@ -52,6 +52,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ...resource,
             department: dept,
             status,
+            workingHoursStart: resource.workingHoursStart,
+            workingHoursEnd: resource.workingHoursEnd,
+            hasWorkingHours: resource.hasWorkingHours,
           };
         })
       );
@@ -120,6 +123,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/bookings", async (req, res) => {
     try {
       const validatedData = insertBookingSchema.parse(req.body);
+      
+      // Check working hours validation
+      const timeValidation = await storage.isBookingTimeValid(
+        validatedData.resourceId,
+        validatedData.startTime,
+        validatedData.endTime
+      );
+
+      if (!timeValidation.valid) {
+        return res.status(400).json({ 
+          message: timeValidation.message 
+        });
+      }
       
       // Check for conflicts
       const conflicts = await storage.getConflictingBookings(
