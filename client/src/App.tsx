@@ -1,5 +1,5 @@
 import { Switch, Route } from "wouter";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { queryClient } from "./lib/queryClient";
@@ -79,6 +79,24 @@ function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
 function MainContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Keep sidebar open on desktop by default
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setSidebarOpen(true);
+      } else {
+        setSidebarOpen(false);
+      }
+    };
+
+    // Set initial state
+    handleResize();
+    
+    // Listen for resize events
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       <Sidebar
@@ -87,7 +105,7 @@ function MainContent() {
         onClose={() => setSidebarOpen(false)}
       />
       
-      <main className="lg:ml-72 min-h-screen">
+      <main className={`min-h-screen transition-all duration-300 ${sidebarOpen && window.innerWidth >= 1024 ? 'lg:ml-72' : ''}`}>
         <TopBar onMenuClick={() => setSidebarOpen(true)} />
         
         <div className="p-4 lg:p-8">

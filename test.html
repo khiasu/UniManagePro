@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniManagePro - Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .success {
+            color: #22c55e;
+            font-weight: bold;
+        }
+        .error {
+            color: #ef4444;
+            font-weight: bold;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        .result {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid #3b82f6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎓 UniManagePro - System Test</h1>
+        <p>Testing the improved booking system with all the new features!</p>
+        
+        <h2>✅ Server Status</h2>
+        <p class="success">Server is running successfully!</p>
+        
+        <h2>🧪 API Tests</h2>
+        <button onclick="testDepartments()">Test Departments API</button>
+        <button onclick="testResources()">Test Resources API</button>
+        <button onclick="testAuth()">Test Auth API</button>
+        
+        <div id="results"></div>
+        
+        <h2>🎯 New Features Added</h2>
+        <ul>
+            <li>✅ <strong>Simplified Date/Time Selection</strong> - Next 7 days + time slot buttons</li>
+            <li>✅ <strong>Missing Labs Added</strong> - Civil, Mechanical, Electrical, Life Sciences, Arts, Commerce</li>
+            <li>✅ <strong>Proper Working Hours</strong> - Labs (9AM-3PM), Sports (9AM-7PM)</li>
+            <li>✅ <strong>Enhanced UI</strong> - Larger modal with better responsive design</li>
+            <li>✅ <strong>Fixed Time Validation</strong> - Local time instead of UTC</li>
+        </ul>
+        
+        <h2>🏢 Available Departments</h2>
+        <div id="departments-list">Loading...</div>
+        
+        <h2>🔬 Available Labs & Facilities</h2>
+        <div id="resources-list">Loading...</div>
+    </div>
+
+    <script>
+        const resultsDiv = document.getElementById('results');
+        
+        function addResult(title, data, isError = false) {
+            const div = document.createElement('div');
+            div.className = 'result';
+            div.innerHTML = `
+                <h3 style="color: ${isError ? '#ef4444' : '#22c55e'}">${title}</h3>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+            resultsDiv.appendChild(div);
+        }
+        
+        async function testDepartments() {
+            try {
+                const response = await fetch('/api/departments');
+                const data = await response.json();
+                addResult('✅ Departments API', data);
+                
+                // Update departments list
+                const deptsList = document.getElementById('departments-list');
+                deptsList.innerHTML = data.map(dept => 
+                    `<div style="margin: 5px 0; padding: 10px; background: #f0f9ff; border-radius: 5px;">
+                        <strong>${dept.name}</strong> (${dept.code}) - ${dept.description}
+                    </div>`
+                ).join('');
+            } catch (error) {
+                addResult('❌ Departments API Error', error.message, true);
+            }
+        }
+        
+        async function testResources() {
+            try {
+                const response = await fetch('/api/resources');
+                const data = await response.json();
+                addResult('✅ Resources API', data);
+                
+                // Update resources list
+                const resourcesList = document.getElementById('resources-list');
+                resourcesList.innerHTML = data.map(resource => 
+                    `<div style="margin: 5px 0; padding: 10px; background: #f0fdf4; border-radius: 5px;">
+                        <strong>${resource.name}</strong> - ${resource.type}<br>
+                        <small>📍 ${resource.location} | 👥 ${resource.capacity} people | ⏰ ${resource.workingHoursStart}-${resource.workingHoursEnd}</small>
+                    </div>`
+                ).join('');
+            } catch (error) {
+                addResult('❌ Resources API Error', error.message, true);
+            }
+        }
+        
+        async function testAuth() {
+            try {
+                const response = await fetch('/api/auth/me');
+                const data = await response.json();
+                addResult('✅ Auth API', data);
+            } catch (error) {
+                addResult('❌ Auth API Error', error.message, true);
+            }
+        }
+        
+        // Auto-load data on page load
+        window.onload = function() {
+            testDepartments();
+            testResources();
+        };
+    </script>
+</body>
+</html>

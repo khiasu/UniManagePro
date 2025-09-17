@@ -88,9 +88,7 @@ Key entities:
 - **lucide-react**: Icon library
 
 ### Development Tools
-- **vite**: Build tool and development server
 - **typescript**: Static type checking
-- **@replit/vite-plugin-***: Replit-specific development enhancements
 
 ### Database & Validation
 - **zod**: Schema validation for forms and API

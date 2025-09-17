@@ -18,6 +18,12 @@ import {
   Dna,
   Calculator,
   Building,
+  HardHat,
+  Cog,
+  Zap,
+  Palette,
+  TrendingUp,
+  Leaf,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -33,6 +39,12 @@ const departmentIcons = {
   "fas fa-dna": Dna,
   "fas fa-calculator": Calculator,
   "fas fa-building": Building,
+  "fas fa-hard-hat": HardHat,
+  "fas fa-cogs": Cog,
+  "fas fa-bolt": Zap,
+  "fas fa-palette": Palette,
+  "fas fa-chart-line": TrendingUp,
+  "fas fa-leaf": Leaf,
 };
 
 const mainNavItems: NavItem[] = [
@@ -69,11 +81,6 @@ export function Sidebar({ isOpen, onToggle, onClose }: SidebarProps) {
     queryKey: ["/api/auth/me"],
   });
 
-  const sidebarVariants = {
-    open: { x: 0 },
-    closed: { x: "-100%" },
-  };
-
   return (
     <>
       {/* Mobile overlay */}
@@ -83,7 +90,7 @@ export function Sidebar({ isOpen, onToggle, onClose }: SidebarProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-black/20 mobile-menu-overlay lg:hidden"
+            className="fixed inset-0 z-40 bg-black/20 lg:hidden"
             onClick={onClose}
             data-testid="sidebar-overlay"
           />
@@ -91,11 +98,12 @@ export function Sidebar({ isOpen, onToggle, onClose }: SidebarProps) {
       </AnimatePresence>
 
       {/* Sidebar */}
-      <motion.aside
-        variants={sidebarVariants}
-        animate={isOpen ? "open" : "closed"}
-        transition={{ type: "spring", damping: 30, stiffness: 300 }}
-        className="fixed left-0 top-0 z-50 h-screen w-72 bg-sidebar border-r border-sidebar-border sidebar-transition lg:translate-x-0"
+      <aside
+        className={cn(
+          "fixed left-0 top-0 z-50 h-screen w-72 bg-sidebar border-r border-sidebar-border transition-transform duration-300 ease-in-out",
+          "lg:translate-x-0", // Always visible on desktop
+          isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        )}
         data-testid="sidebar"
       >
         <div className="flex h-full flex-col">
@@ -120,7 +128,7 @@ export function Sidebar({ isOpen, onToggle, onClose }: SidebarProps) {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-2">
+          <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
             <div className="space-y-1">
               {mainNavItems.map((item) => {
                 const isActive = location === item.path;
@@ -131,14 +139,14 @@ export function Sidebar({ isOpen, onToggle, onClose }: SidebarProps) {
                   <Link
                     key={item.id}
                     href={item.path || "#"}
-                    onClick={() => {
-                      setActiveItem(item.id);
-                      if (window.innerWidth < 1024) onClose();
-                    }}
                   >
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
+                      onClick={() => {
+                        setActiveItem(item.id);
+                        if (window.innerWidth < 1024) onClose();
+                      }}
                       className={cn(
                         "w-full flex items-center space-x-3 px-4 py-3 text-left rounded-lg transition-colors",
                         isActive
@@ -168,14 +176,14 @@ export function Sidebar({ isOpen, onToggle, onClose }: SidebarProps) {
                     <Link
                       key={dept.id}
                       href={`/browse-resources?dept=${dept.id}`}
-                      onClick={() => {
-                        setActiveItem("browse");
-                        if (window.innerWidth < 1024) onClose();
-                      }}
                     >
                       <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
+                        onClick={() => {
+                          setActiveItem("browse");
+                          if (window.innerWidth < 1024) onClose();
+                        }}
                         className="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-lg transition-colors"
                         data-testid={`dept-${dept.code.toLowerCase()}`}
                       >
@@ -186,6 +194,12 @@ export function Sidebar({ isOpen, onToggle, onClose }: SidebarProps) {
                           "text-red-500": dept.color === "red",
                           "text-orange-500": dept.color === "orange",
                           "text-gray-500": dept.color === "gray",
+                          "text-yellow-500": dept.color === "yellow",
+                          "text-pink-500": dept.color === "pink",
+                          "text-teal-500": dept.color === "teal",
+                          "text-emerald-500": dept.color === "emerald",
+                          "text-slate-500": dept.color === "slate",
+                          "text-brown-500": dept.color === "brown",
                         })} />
                         <span>{dept.name}</span>
                       </motion.button>
@@ -220,7 +234,7 @@ export function Sidebar({ isOpen, onToggle, onClose }: SidebarProps) {
             </motion.div>
           </div>
         </div>
-      </motion.aside>
+      </aside>
     </>
   );
 }

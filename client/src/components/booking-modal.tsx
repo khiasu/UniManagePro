@@ -21,17 +21,47 @@ interface BookingModalProps {
 }
 
 const bookingSchema = z.object({
-  startTime: z.string().min(1, "Start time is required"),
-  endTime: z.string().min(1, "End time is required"),
+  selectedDate: z.string().min(1, "Please select a date"),
+  startTime: z.string().min(1, "Please select a start time"),
+  endTime: z.string().min(1, "Please select an end time"),
   purpose: z.string().min(1, "Purpose is required").max(200, "Purpose must be less than 200 characters"),
   attendees: z.number().min(1, "At least 1 attendee required").max(500, "Too many attendees"),
 });
 
 type BookingFormData = z.infer<typeof bookingSchema>;
 
+// Generate next 7 days
+const getNext7Days = () => {
+  const days = [];
+  const today = new Date();
+  
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(today);
+    date.setDate(today.getDate() + i);
+    days.push({
+      date: date.toISOString().split('T')[0],
+      label: i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+    });
+  }
+  return days;
+};
+
+// Generate time slots based on working hours
+const generateTimeSlots = (startHour: number, endHour: number) => {
+  const slots = [];
+  for (let hour = startHour; hour < endHour; hour++) {
+    slots.push(`${hour.toString().padStart(2, '0')}:00`);
+    slots.push(`${hour.toString().padStart(2, '0')}:30`);
+  }
+  return slots;
+};
+
 export function BookingModal({ isOpen, onClose, resource }: BookingModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [selectedDate, setSelectedDate] = useState<string>("");
+  const [selectedStartTime, setSelectedStartTime] = useState<string>("");
+  const [selectedEndTime, setSelectedEndTime] = useState<string>("");
   
   const { data: currentUser } = useQuery<any>({
     queryKey: ["/api/auth/me"],
@@ -40,6 +70,7 @@ export function BookingModal({ isOpen, onClose, resource }: BookingModalProps) {
   const form = useForm<BookingFormData>({
     resolver: zodResolver(bookingSchema),
     defaultValues: {
+      selectedDate: "",
       startTime: "",
       endTime: "",
       purpose: "",
@@ -55,11 +86,15 @@ export function BookingModal({ isOpen, onClose, resource }: BookingModalProps) {
         throw new Error("User not authenticated");
       }
       
+      // Combine date and time to create full datetime
+      const startDateTime = new Date(`${data.selectedDate}T${data.startTime}:00`);
+      const endDateTime = new Date(`${data.selectedDate}T${data.endTime}:00`);
+      
       return apiRequest("POST", "/api/bookings", {
         resourceId: resource.id,
         userId: currentUser.id,
-        startTime: new Date(data.startTime).toISOString(),
-        endTime: new Date(data.endTime).toISOString(),
+        startTime: startDateTime.toISOString(),
+        endTime: endDateTime.toISOString(),
         purpose: data.purpose,
         attendees: data.attendees,
       });
@@ -73,6 +108,9 @@ export function BookingModal({ isOpen, onClose, resource }: BookingModalProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       onClose();
       form.reset();
+      setSelectedDate("");
+      setSelectedStartTime("");
+      setSelectedEndTime("");
     },
     onError: (error: any) => {
       toast({
@@ -89,13 +127,21 @@ export function BookingModal({ isOpen, onClose, resource }: BookingModalProps) {
 
   if (!resource) return null;
 
-  // Get today's date and time for min datetime
-  const now = new Date();
-  const today = now.toISOString().slice(0, 16);
+  const next7Days = getNext7Days();
+  
+  // Get working hours for time slot generation
+  const workingStartHour = resource.hasWorkingHours 
+    ? parseInt(resource.workingHoursStart?.split(':')[0] || '9') 
+    : 9;
+  const workingEndHour = resource.hasWorkingHours 
+    ? parseInt(resource.workingHoursEnd?.split(':')[0] || '15') 
+    : 19;
+  
+  const timeSlots = generateTimeSlots(workingStartHour, workingEndHour);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl" data-testid="booking-modal">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" data-testid="booking-modal">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span>Book {resource.name}</span>
@@ -165,52 +211,120 @@ export function BookingModal({ isOpen, onClose, resource }: BookingModalProps) {
 
           {/* Booking Form */}
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="startTime"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        <Clock className="w-4 h-4" />
-                        Start Time
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          type="datetime-local"
-                          min={today}
-                          {...field}
-                          data-testid="input-start-time"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+              
+              {/* Date Selection */}
+              <FormField
+                control={form.control}
+                name="selectedDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      Select Date
+                    </FormLabel>
+                    <FormControl>
+                      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+                        {next7Days.map((day) => (
+                          <Button
+                            key={day.date}
+                            type="button"
+                            variant={selectedDate === day.date ? "default" : "outline"}
+                            className="h-auto p-3 flex flex-col items-center"
+                            onClick={() => {
+                              setSelectedDate(day.date);
+                              field.onChange(day.date);
+                            }}
+                          >
+                            <span className="text-xs font-medium">{day.label}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(day.date).getDate()}
+                            </span>
+                          </Button>
+                        ))}
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                <FormField
-                  control={form.control}
-                  name="endTime"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        <Clock className="w-4 h-4" />
-                        End Time
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          type="datetime-local"
-                          min={today}
-                          {...field}
-                          data-testid="input-end-time"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              {/* Time Selection */}
+              {selectedDate && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="startTime"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          <Clock className="w-4 h-4" />
+                          Start Time
+                        </FormLabel>
+                        <FormControl>
+                          <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto">
+                            {timeSlots.map((time) => (
+                              <Button
+                                key={time}
+                                type="button"
+                                variant={selectedStartTime === time ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedStartTime(time);
+                                  field.onChange(time);
+                                  // Clear end time if it's before or equal to start time
+                                  if (selectedEndTime && selectedEndTime <= time) {
+                                    setSelectedEndTime("");
+                                    form.setValue("endTime", "");
+                                  }
+                                }}
+                              >
+                                {time}
+                              </Button>
+                            ))}
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="endTime"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          <Clock className="w-4 h-4" />
+                          End Time
+                        </FormLabel>
+                        <FormControl>
+                          <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto">
+                            {timeSlots
+                              .filter(time => !selectedStartTime || time > selectedStartTime)
+                              .map((time) => (
+                              <Button
+                                key={time}
+                                type="button"
+                                variant={selectedEndTime === time ? "default" : "outline"}
+                                size="sm"
+                                disabled={!selectedStartTime}
+                                onClick={() => {
+                                  setSelectedEndTime(time);
+                                  field.onChange(time);
+                                }}
+                              >
+                                {time}
+                              </Button>
+                            ))}
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
 
               <FormField
                 control={form.control}
@@ -268,7 +382,7 @@ export function BookingModal({ isOpen, onClose, resource }: BookingModalProps) {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={bookingMutation.isPending}
+                  disabled={bookingMutation.isPending || !selectedDate || !selectedStartTime || !selectedEndTime}
                   data-testid="button-confirm-booking"
                 >
                   {bookingMutation.isPending ? "Creating..." : "Confirm Booking"}
