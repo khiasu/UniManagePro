@@ -93,13 +93,11 @@ export const insertResourceSchema = createInsertSchema(resources).pick({
 export const insertBookingSchema = createInsertSchema(bookings).pick({
   resourceId: true,
   userId: true,
-  startTime: true,
-  endTime: true,
   purpose: true,
   attendees: true,
 }).extend({
-  startTime: z.coerce.date(),
-  endTime: z.coerce.date(),
+  startTime: z.string().transform((str) => new Date(str)),
+  endTime: z.string().transform((str) => new Date(str)),
 });
 
 // Types
