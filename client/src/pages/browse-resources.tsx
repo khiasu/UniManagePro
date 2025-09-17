@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useSearch } from "wouter";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ import {
 } from "lucide-react";
 
 export default function BrowseResources() {
+  const search = useSearch();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
   const [resourceType, setResourceType] = useState<string>("all");
@@ -28,6 +30,15 @@ export default function BrowseResources() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState<string>("name");
   const { toast } = useToast();
+
+  // Handle URL query parameters
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    const deptParam = params.get('dept');
+    if (deptParam && deptParam !== 'all') {
+      setSelectedDepartment(deptParam);
+    }
+  }, [search]);
 
   const { data: resources = [], isLoading } = useQuery<ResourceWithStatus[]>({
     queryKey: ["/api/resources"],

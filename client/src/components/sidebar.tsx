@@ -165,23 +165,31 @@ export function Sidebar({ isOpen, onToggle, onClose }: SidebarProps) {
                   const IconComponent = departmentIcons[dept.icon as keyof typeof departmentIcons] || Building;
                   
                   return (
-                    <motion.button
+                    <Link
                       key={dept.id}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-lg transition-colors"
-                      data-testid={`dept-${dept.code.toLowerCase()}`}
+                      href={`/browse-resources?dept=${dept.id}`}
+                      onClick={() => {
+                        setActiveItem("browse");
+                        if (window.innerWidth < 1024) onClose();
+                      }}
                     >
-                      <IconComponent className={cn("w-4 h-4", {
-                        "text-blue-500": dept.color === "blue",
-                        "text-green-500": dept.color === "green",
-                        "text-purple-500": dept.color === "purple",
-                        "text-red-500": dept.color === "red",
-                        "text-orange-500": dept.color === "orange",
-                        "text-gray-500": dept.color === "gray",
-                      })} />
-                      <span>{dept.name}</span>
-                    </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-lg transition-colors"
+                        data-testid={`dept-${dept.code.toLowerCase()}`}
+                      >
+                        <IconComponent className={cn("w-4 h-4", {
+                          "text-blue-500": dept.color === "blue",
+                          "text-green-500": dept.color === "green",
+                          "text-purple-500": dept.color === "purple",
+                          "text-red-500": dept.color === "red",
+                          "text-orange-500": dept.color === "orange",
+                          "text-gray-500": dept.color === "gray",
+                        })} />
+                        <span>{dept.name}</span>
+                      </motion.button>
+                    </Link>
                   );
                 })}
               </div>
