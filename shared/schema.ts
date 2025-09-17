@@ -97,6 +97,9 @@ export const insertBookingSchema = createInsertSchema(bookings).pick({
   endTime: true,
   purpose: true,
   attendees: true,
+}).extend({
+  startTime: z.coerce.date(),
+  endTime: z.coerce.date(),
 });
 
 // Types
