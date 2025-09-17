@@ -7,14 +7,17 @@ import { z } from "zod";
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth endpoints (simplified for demo)
   app.get("/api/auth/me", async (req, res) => {
-    // For demo purposes, return the first user
-    const users = await storage.getAllDepartments();
-    const user = Array.from(storage["users"].values())[0];
-    if (user) {
-      const { password, ...userWithoutPassword } = user;
-      res.json(userWithoutPassword);
-    } else {
-      res.status(401).json({ message: "Not authenticated" });
+    try {
+      // For demo purposes, return the sample user
+      const user = await storage.getUserByUsername("sarah.chen");
+      if (user) {
+        const { password, ...userWithoutPassword } = user;
+        res.json(userWithoutPassword);
+      } else {
+        res.status(401).json({ message: "Not authenticated" });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to authenticate" });
     }
   });
 
@@ -194,8 +197,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard stats
   app.get("/api/dashboard/stats", async (req, res) => {
     try {
-      // For demo, use first user
-      const user = Array.from(storage["users"].values())[0];
+      // For demo, use sample user
+      const user = await storage.getUserByUsername("sarah.chen");
       if (!user) {
         return res.status(401).json({ message: "Not authenticated" });
       }
